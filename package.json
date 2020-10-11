@@ -1,0 +1,19 @@
+{
+  "name": "krt",
+  "version": "1.0.0",
+  "description": "一些常用的js方法",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kooritea/krt.git"
+  },
+  "author": "kooritea",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kooritea/krt/issues"
+  },
+  "homepage": "https://github.com/kooritea/krt#readme"
+}
