@@ -6,6 +6,19 @@
 tag="$1"
 cmd="$2"
 
+if [ "$tag" == "" ];then
+  freelibname="1"
+  while [ -d "/tmp/lib-$freelibname" ]
+  do
+    freelibname=`expr $freelibname + 1`
+  done
+  tag="$freelibname"
+fi
+if [ ! -d "/tmp/krtlib-$tag" ];then
+  mkdir "/tmp/krtlib-$tag"
+fi
+basepath="/tmp/krtlib-$tag"
+
 #如果已经锁定则直接退出脚本
 checkLock(){
   if [ -e "$basepath/$tag.lock" ];then
@@ -70,19 +83,6 @@ accumulative(){
   fi
 }
 
-if [ "$cmd" == "" ];then
-  if [ "$tag" == "" ];then
-    freelibname="1"
-    while [ -d "/tmp/lib-$freelibname" ]
-    do
-      freelibname=`expr $freelibname + 1`
-    done
-    tag="lib-$freelibname"
-  fi
-  if [ ! -d "/tmp/$tag" ];then
-    mkdir "/tmp/$tag"
-  fi
-  basepath="/tmp/$tag"
-else
+if [ "$cmd" != "" ];then
   $cmd
 fi
