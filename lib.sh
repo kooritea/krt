@@ -1,38 +1,72 @@
-#!/bin/bash
+#!/bin/sh
 
 #加载方式
-#source /path/lib namespace
+#source /path/lib $namespace $lib_configpath
 
-# 调试 /bin/bash /path/lib $lib_tag $lib_cmd $arg1 $arg2 $arg3 $arg4 
+#持久化文件的前缀
+lib_namespace="$1"
 
-lib_tag="$1"
-lib_cmd="$2"
+#配置文件路径，要写绝对路径，默认"$lib_runpath/lib.env"
+#配置文件可用参数和实例格式
+#libenv_mpushurl=(http|https)://[host]:[port]
+lib_configpath="$2"
 
+# lib_requires=("curl")
+lib_requires="curl"
 #调用本库的脚本的位置
 lib_runpath=$(cd `dirname $0`; pwd)
 
+#临时文件存放路径，在lib_init中初始化
+lib_tmppath=""
+
 #当前库所在的位置
-lib_staticpath=$(cd $(dirname ${BASH_SOURCE[0]}); pwd)
+# lib_staticpath=$(cd $(dirname ${BASH_SOURCE[0]}); pwd)
+#sh环境不可用
 
-#配置文件路径，要写绝对路径，相对路径请使用lib_runpath或lib_staticpath拼接
-lib_configpath="$lib_staticpath/lib.env"
+lib_init(){
+  if [ "$lib_namespace" = "" ];then
+    local freelibname="1"
+    while [ -d "/tmp/lib-$freelibname" ]
+    do
+      freelibname=`expr $freelibname + 1`
+    done
+    lib_namespace="lib-$freelibname"
+  fi
+  if [ ! -d "/tmp/$lib_namespace" ];then
+    mkdir "/tmp/$lib_namespace"
+  fi
+  lib_tmppath="/tmp/$lib_namespace"
 
-# 配置文件可用参数和实例格式
-# libenv_mpushurl=(http|https)://[host]:[port]
+  if [ "$lib_configpath" = "" ];then
+    lib_configpath="$lib_runpath/lib.env"
+  fi
+  if [ -f "$lib_configpath" ];then
+    source "$lib_configpath"
+  else
+    echo "[warn]未找到配置文件： $lib_configpath"
+  fi
 
-source "$lib_configpath"
+  for cmd in ${lib_requires};do
+    type "$cmd" > /dev/null 2>&1
+    if [ $? -ne 0 ];then
+      echo "未找到依赖命令： $cmd"
+      exit
+    fi
+  done
+}
+lib_init
 
 #如果已经锁定则直接退出脚本
 lib_checkLock(){
-  if [ -e "$lib_runpath/$lib_tag.lock" ];then
+  if [ -e "$lib_tmppath/$lib_namespace.lock" ];then
 	  exit 0
   fi
 }
 lib_setlock(){
-	touch "$lib_runpath/$lib_tag.lock"
+	touch "$lib_tmppath/$lib_namespace.lock"
 }
 lib_unlock(){
-	rm -rf "$lib_runpath/$lib_tag.lock"
+	rm -rf "$lib_tmppath/$lib_namespace.lock"
 }
 #计数器，第一个参数是[add|reset],第二个参数是累计次数,第三个参数是作用域
 #返回三种状态码，0,1,2,3
@@ -55,21 +89,21 @@ lib_accumulative(){
   local lib_cmd="$1"
   local limit="$2"
   local scope="$3"
-  if [ "$scope" == "" ];then
+  if [ "$scope" = "" ];then
     scope="default"
   fi
 
-  if [ ! -f "$lib_runpath/$scope.accumulative" ];then
-    touch "$lib_runpath/$scope.accumulative"
+  if [ ! -f "$lib_tmppath/$scope.accumulative" ];then
+    touch "$lib_tmppath/$scope.accumulative"
   fi
 
-  local sum=`cat $lib_runpath/$scope.accumulative`
-  if [ "$sum" == "" ];then
+  local sum=`cat $lib_tmppath/$scope.accumulative`
+  if [ "$sum" = "" ];then
     sum=0
   fi
-  if [ "$lib_cmd" == "add" ];then
+  if [ "$lib_cmd" = "add" ];then
     sum=`expr $sum + 1`
-    echo "$sum" > "$lib_runpath/$scope.accumulative"
+    echo "$sum" > "$lib_tmppath/$scope.accumulative"
     if [ "$sum" -gt "$limit" ];then
       local tmpsum=`expr $sum - 1`
       if [ "$tmpsum" -gt "$limit" ];then
@@ -81,8 +115,8 @@ lib_accumulative(){
       return 0
     fi
   fi
-  if [ "$lib_cmd" == "reset" ];then
-    echo "0" > "$lib_runpath/$scope.accumulative"
+  if [ "$lib_cmd" = "reset" ];then
+    echo "0" > "$lib_tmppath/$scope.accumulative"
     if [ "$sum" -gt "$limit" ];then
       return 1
     else
@@ -99,21 +133,3 @@ lib_mpush(){
   curl -G "$libenv_mpushurl/$2.$1" --data-urlencode "text=$3" --data-urlencode "desp=$4" > /dev/null
 }
 
-
-
-if [ "$lib_cmd" == "" ];then
-  if [ "$lib_tag" == "" ];then
-    freelibname="1"
-    while [ -d "/tmp/lib-$freelibname" ]
-    do
-      freelibname=`expr $freelibname + 1`
-    done
-    lib_tag="lib-$freelibname"
-  fi
-  if [ ! -d "/tmp/$lib_tag" ];then
-    mkdir "/tmp/$lib_tag"
-  fi
-  lib_runpath="/tmp/$lib_tag"
-else
-  $lib_cmd $3 $4 $5 $6
-fi
