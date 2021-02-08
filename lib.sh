@@ -133,3 +133,15 @@ lib_mpush(){
   curl -G "$libenv_mpushurl/$2.$1" --data-urlencode "text=$3" --data-urlencode "desp=$4" > /dev/null
 }
 
+# 测试$1中是否存在$2
+# 0表示存在
+# if [ 0 -eq $? ];then
+# else
+# fi
+lib_strTest(){
+	if [ `echo "$1" | grep -c "$2"` -ne 0 ];then
+		return 0
+	else
+		return 1
+	fi
+}
