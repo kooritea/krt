@@ -59,6 +59,7 @@ lib_init
 #如果已经锁定则直接退出脚本
 lib_checkLock(){
   if [ -e "$lib_tmppath/$lib_namespace.lock" ];then
+    echo "$lib_namespace is locked"
 	  exit 0
   fi
 }
@@ -69,7 +70,7 @@ lib_unlock(){
 	rm -rf "$lib_tmppath/$lib_namespace.lock"
 }
 #计数器，第一个参数是[add|reset],第二个参数是累计次数,第三个参数是作用域
-#返回三种状态码，0,1,2,3
+#返回四种状态码，0,1,2,3
 #case $? in
 #0)
 #  echo "表示0状态未发生改变，可能是add但未到次数，也可能是上次并未到达警告值就已经reset"
