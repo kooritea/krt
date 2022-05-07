@@ -84,6 +84,8 @@ lib_unlock(){
 #3)
 #  echo "表示上一次已经超过了限制次数，这次依然超过限制次数"
 #  ;;
+#*)
+#  echo "error" > /dev/null
 #esac
 lib_accumulative(){
 
